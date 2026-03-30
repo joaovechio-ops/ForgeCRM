@@ -1,0 +1,131 @@
+rules_version = '2';
+
+/**
+ * FIRESTORE SECURITY RULES - CRM PROTOTYPE
+ * 
+ * Core Philosophy:
+ * This ruleset implements a strict Ownership-Based Access Control (OBAC) model combined 
+ * with a mandatory "Active User" check for all functional operations. It prioritizes 
+ * security on identity and authorization while remaining flexible on data schemas to 
+ * support rapid prototyping.
+ * 
+ * Data Structure:
+ * All entities (User, Account, Lead, Opportunity, Activity) are stored in top-level 
+ * collections. This flat structure provides high performance and clear security boundaries.
+ * 
+ * Key Security Decisions:
+ * 1. Active User Enforcement: To satisfy the SSO requirement, every data-access request 
+ *    (outside of initial user registration) verifies that the requester exists in the 
+ *    '/users' collection and has 'isActive' set to true.
+ * 2. Ownership Model: Access to Accounts, Leads, Opportunities, and Activities is 
+ *    strictly restricted to the user identified in the document's 'ownerId' or 
+ *    'assignedToId' field.
+ * 3. Denormalization for Authorization: Essential authorization context (like 'ownerId') 
+ *    is stored directly on every document. This avoids expensive 'get()' calls to parent 
+ *    documents and ensures rules are performant and atomic.
+ * 4. Immutability: Critical relational fields (like ownership IDs) are enforced as 
+ *    immutable during updates to prevent data hijacking or accidental reassignment.
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+
+    /** Checks if the requester is authenticated. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** Checks if the requester's UID matches the provided userId. */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /** 
+     * Verifies the user is "Active" in the CRM system.
+     * This is the core check for the SSO/Project Team requirement.
+     */
+    function isActiveUser() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true;
+    }
+
+    /** Ensures a document exists and the requester is the owner. */
+    function isExistingOwner(ownerId) {
+      return resource != null && isOwner(ownerId);
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Rules for User profiles. Enables self-registration and profile management.
+     * @path /users/{userId}
+     * @allow (get) If requester is the profile owner.
+     * @deny (list) Prevent listing all users to protect the directory.
+     * @principle Ownership-based access with self-creation support.
+     */
+    match /users/{userId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false; // Directory listing is disabled for security.
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if false; // Users cannot delete their own accounts in this prototype.
+    }
+
+    /**
+     * @description Rules for Client Accounts. Access is restricted to the account owner.
+     * @path /accounts/{accountId}
+     * @allow (create) If requester is an active user and sets themselves as owner.
+     * @deny (update) If requester attempts to change the 'ownerId'.
+     * @principle Active-status enforcement and ownership validation.
+     */
+    match /accounts/{accountId} {
+      allow get, list: if isActiveUser() && isOwner(resource.data.ownerId);
+      allow create: if isActiveUser() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isActiveUser() && isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isActiveUser() && isExistingOwner(resource.data.ownerId);
+    }
+
+    /**
+     * @description Rules for Sales Leads.
+     * @path /leads/{leadId}
+     * @allow (list) Active users can list leads they own.
+     * @deny (get) If the user is signed in but 'isActive' is false in their profile.
+     * @principle Relational integrity via 'ownerId' field.
+     */
+    match /leads/{leadId} {
+      allow get, list: if isActiveUser() && isOwner(resource.data.ownerId);
+      allow create: if isActiveUser() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isActiveUser() && isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isActiveUser() && isExistingOwner(resource.data.ownerId);
+    }
+
+    /**
+     * @description Rules for Sales Opportunities.
+     * @path /opportunities/{opportunityId}
+     * @allow (update) If owner changes pipeline stage but keeps 'ownerId' intact.
+     * @deny (create) If 'ownerId' in the data does not match the requester's UID.
+     * @principle Mandatory active user check for high-value sales data.
+     */
+    match /opportunities/{opportunityId} {
+      allow get, list: if isActiveUser() && isOwner(resource.data.ownerId);
+      allow create: if isActiveUser() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isActiveUser() && isExistingOwner(resource.data.ownerId) && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isActiveUser() && isExistingOwner(resource.data.ownerId);
+    }
+
+    /**
+     * @description Rules for Activities and Tasks.
+     * @path /activities/{activityId}
+     * @allow (get) If the requester is the person assigned to the activity.
+     * @deny (delete) If the activity does not exist or belongs to someone else.
+     * @principle Assignment-based security via 'assignedToId'.
+     */
+    match /activities/{activityId} {
+      allow get, list: if isActiveUser() && isOwner(resource.data.assignedToId);
+      allow create: if isActiveUser() && request.resource.data.assignedToId == request.auth.uid;
+      allow update: if isActiveUser() && isExistingOwner(resource.data.assignedToId) && request.resource.data.assignedToId == resource.data.assignedToId;
+      allow delete: if isActiveUser() && isExistingOwner(resource.data.assignedToId);
+    }
+  }
+}

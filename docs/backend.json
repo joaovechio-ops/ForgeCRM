@@ -1,0 +1,350 @@
+
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user within the CRM system, including their roles and basic profile information. This entity is distinct from authentication data, which is handled externally by Firebase Auth.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity. This typically corresponds to the Firebase Authentication UID."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address, often provided by the identity provider (e.g., Google).",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's full name or preferred display name."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role assigned to the user within the CRM (e.g., 'admin', 'manager', 'sales')."
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Indicates if the user is an active member of the project team."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "displayName",
+        "role",
+        "isActive"
+      ]
+    },
+    "Account": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Account",
+      "type": "object",
+      "description": "Represents a company or organization that is a client or prospect for the CRM.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Account entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The official name of the company or organization."
+        },
+        "industry": {
+          "type": "string",
+          "description": "The industry sector the account operates in."
+        },
+        "website": {
+          "type": "string",
+          "description": "The primary website URL for the account.",
+          "format": "uri"
+        },
+        "phone": {
+          "type": "string",
+          "description": "The main contact phone number for the account."
+        },
+        "address": {
+          "type": "string",
+          "description": "The primary physical address of the account."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Reference to the User who is the primary owner or manager of this account. (Relationship: User 1:N Account)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the account record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the account record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "ownerId"
+      ]
+    },
+    "Lead": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Lead",
+      "type": "object",
+      "description": "Represents a potential customer or prospect that has not yet been qualified as an opportunity.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Lead entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the lead contact."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the lead contact."
+        },
+        "email": {
+          "type": "string",
+          "description": "The primary email address of the lead.",
+          "format": "email"
+        },
+        "phone": {
+          "type": "string",
+          "description": "The primary phone number of the lead."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the lead (e.g., 'New', 'Contacted', 'Qualified', 'Disqualified')."
+        },
+        "origin": {
+          "type": "string",
+          "description": "The source from which the lead was acquired (e.g., 'Website', 'Referral', 'Event', 'Cold Call')."
+        },
+        "aiScore": {
+          "type": "number",
+          "description": "An AI-generated score indicating the lead's potential or likelihood of conversion."
+        },
+        "accountId": {
+          "type": "string",
+          "description": "Reference to the Account associated with this lead. (Relationship: Account 1:N Lead)"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Reference to the User who is responsible for managing this lead. (Relationship: User 1:N Lead)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the lead record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the lead record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "status",
+        "origin",
+        "ownerId"
+      ]
+    },
+    "Opportunity": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Opportunity",
+      "type": "object",
+      "description": "Represents a qualified sales opportunity, tracking its progress through the sales pipeline.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Opportunity entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "A descriptive name for the sales opportunity."
+        },
+        "value": {
+          "type": "number",
+          "description": "The estimated monetary value of the opportunity."
+        },
+        "expectedCloseDate": {
+          "type": "string",
+          "description": "The anticipated date by which the opportunity is expected to close.",
+          "format": "date-time"
+        },
+        "pipelineStage": {
+          "type": "string",
+          "description": "The current stage of the opportunity in the sales pipeline (e.g., 'Prospecting', 'Qualification', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost')."
+        },
+        "summary": {
+          "type": "string",
+          "description": "An AI-generated summary of the opportunity based on activity notes and details."
+        },
+        "accountId": {
+          "type": "string",
+          "description": "Reference to the Account associated with this opportunity. (Relationship: Account 1:N Opportunity)"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Reference to the User who is the primary owner or sales representative for this opportunity. (Relationship: User 1:N Opportunity)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the opportunity record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the opportunity record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "value",
+        "expectedCloseDate",
+        "pipelineStage",
+        "accountId",
+        "ownerId"
+      ]
+    },
+    "Activity": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Activity",
+      "type": "object",
+      "description": "Records all interactions and tasks related to leads or opportunities.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Activity entity."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of interaction (e.g., 'Call', 'Email', 'Meeting', 'Note', 'Task')."
+        },
+        "subject": {
+          "type": "string",
+          "description": "A brief subject or title for the activity."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Detailed notes or description of the interaction."
+        },
+        "activityDate": {
+          "type": "string",
+          "description": "The date and time when the activity occurred or is scheduled.",
+          "format": "date-time"
+        },
+        "assignedToId": {
+          "type": "string",
+          "description": "Reference to the User to whom this activity is assigned. (Relationship: User 1:N Activity)"
+        },
+        "leadId": {
+          "type": "string",
+          "description": "Optional reference to the Lead if this activity is specifically associated with a lead. (Relationship: Lead 1:N Activity)"
+        },
+        "opportunityId": {
+          "type": "string",
+          "description": "Optional reference to the Opportunity if this activity is specifically associated with an opportunity. (Relationship: Opportunity 1:N Activity)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the activity record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the activity record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "subject",
+        "notes",
+        "activityDate",
+        "assignedToId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "google.com",
+      "password"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles, roles, and active status. The `userId` corresponds to the Firebase Authentication UID."
+        }
+      },
+      {
+        "path": "/accounts/{accountId}",
+        "definition": {
+          "entityName": "Account",
+          "schema": {
+            "$ref": "#/backend/entities/Account"
+          },
+          "description": "Stores client or prospect accounts."
+        }
+      },
+      {
+        "path": "/leads/{leadId}",
+        "definition": {
+          "entityName": "Lead",
+          "schema": {
+            "$ref": "#/backend/entities/Lead"
+          },
+          "description": "Stores potential customer leads."
+        }
+      },
+      {
+        "path": "/opportunities/{opportunityId}",
+        "definition": {
+          "entityName": "Opportunity",
+          "schema": {
+            "$ref": "#/backend/entities/Opportunity"
+          },
+          "description": "Stores qualified sales opportunities."
+        }
+      },
+      {
+        "path": "/activities/{activityId}",
+        "definition": {
+          "entityName": "Activity",
+          "schema": {
+            "$ref": "#/backend/entities/Activity"
+          },
+          "description": "Records all interactions and tasks related to leads or opportunities."
+        }
+      }
+    ]
+  }
+}
